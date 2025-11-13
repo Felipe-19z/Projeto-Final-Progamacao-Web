@@ -8,4 +8,4 @@
 - Matheus Pereira Feitosa de Almeida
 
 # Resumo do projeto
-O projeto será um Controle de Gastos. Os clientes podem CRIAR, LER, ATUUALIZAR E DELETAR os seus gastos referente a uma data pré estabelecida para que o sistema calcule o preço de quanto gastou a um determinado periodo. 
+O projeto será um Controle de Gastos. Os clientes podem CRIAR, LER, ATUALIZAR E DELETAR os seus gastos referente a uma data pré estabelecida para que o sistema calcule o preço de quanto gastou a um determinado periodo. 
