@@ -1,5 +1,17 @@
 <?php
-// index.php
+// main_menu.php - página de introdução
+
+// Inicia a sessão (caso ainda não tenha sido iniciada)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Se o usuário já estiver logado, manda direto pro dashboard
+// Troque "index.php" pelo nome do seu arquivo de dashboard, se for outro
+if (isset($_SESSION['usuario_id'])) {
+    header('Location: index.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -293,9 +305,7 @@
                 <!-- BEBIDAS -->
                 <div class="video-card">
                     <h3>Empresas de Bebidas</h3>
-                    <p>
-                        
-                    </p>
+                    <p></p>
                     <video controls poster="imagens/thumb-bebidas.jpg">
                         <source src="COCA.mp4" type="video/mp4">
                         Seu navegador não suporta o elemento de vídeo.
@@ -305,9 +315,7 @@
                 <!-- ALIMENTOS -->
                 <div class="video-card">
                     <h3>Empresas de Alimentos</h3>
-                    <p>
-                        
-                    </p>
+                    <p></p>
                     <video controls poster="imagens/thumb-alimentos.jpg">
                         <source src="mequi.mp4" type="video/mp4">
                         Seu navegador não suporta o elemento de vídeo.
@@ -317,9 +325,7 @@
                 <!-- GAMES -->
                 <div class="video-card">
                     <h3>Empresas de Games</h3>
-                    <p>
-                        
-                    </p>
+                    <p></p>
                     <video controls poster="imagens/thumb-games.jpg">
                         <source src="Steam.mp4" type="video/mp4">
                         Seu navegador não suporta o elemento de vídeo.
