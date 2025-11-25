@@ -5,6 +5,14 @@ verificar_login();
 
 $usuario_id = $_SESSION['usuario_id'];
 
+// Helper to return clean JSON and discard any accidental HTML/warnings emitted before
+function api_json($data) {
+    // clear all output buffers to avoid mixing HTML/warnings with JSON
+    while (ob_get_level() > 0) ob_end_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data);
+    exit;
+}
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // If requested, return the raw fixed-expense definitions for management UI
     if (isset($_GET['listar_fixos'])) {
@@ -21,12 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     $fixos[] = $fx;
                 }
                 $stmtFix->close();
-                echo json_encode(['success' => true, 'fixos' => $fixos]);
-                exit;
+                api_json(['success' => true, 'fixos' => $fixos]);
             }
         }
-        echo json_encode(['success' => true, 'fixos' => []]);
-        exit;
+        api_json(['success' => true, 'fixos' => []]);
     }
     // Listar gastos com filtro
     $filtro = $_GET['filtro'] ?? 'mes';
@@ -312,11 +318,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             while ($r = $res_raw->fetch_assoc()) $hist_raw[] = $r;
             $stmt_raw->close();
         }
-        echo json_encode(['success' => true, 'gastos' => $gastos, 'historico_raw' => $hist_raw, 'projecao_anual' => round($projecao_anual, 2)]);
+        api_json(['success' => true, 'gastos' => $gastos, 'historico_raw' => $hist_raw, 'projecao_anual' => round($projecao_anual, 2)]);
     } else {
-        echo json_encode(['success' => true, 'gastos' => $gastos, 'projecao_anual' => round($projecao_anual, 2)]);
+        api_json(['success' => true, 'gastos' => $gastos, 'projecao_anual' => round($projecao_anual, 2)]);
     }
-    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -338,9 +343,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ii", $categoria_id, $usuario_id);
         $stmt->execute();
         if ($stmt->get_result()->num_rows === 0) {
-            echo json_encode(['success' => false, 'message' => 'Categoria inválida']);
             $stmt->close();
-            exit;
+            api_json(['success' => false, 'message' => 'Categoria inválida']);
         }
         $stmt->close();
 
@@ -384,11 +388,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fix_id = $stmtFix->insert_id;
                 $stmtFix->close();
 
-                echo json_encode(['success' => true, 'fixo_id' => $fix_id, 'message' => 'Gasto fixo criado']);
-                exit;
+                api_json(['success' => true, 'fixo_id' => $fix_id, 'message' => 'Gasto fixo criado']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Erro ao criar gasto fixo: ' . $conn->error]);
-                exit;
+                api_json(['success' => false, 'message' => 'Erro ao criar gasto fixo: ' . $conn->error]);
             }
         }
 
@@ -422,14 +424,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtHist->execute();
             $stmtHist->close();
 
-            echo json_encode([
+            api_json([
                 'success' => true,
                 'id' => $existing_id,
                 'merged' => true,
                 'new_total' => $new_total,
                 'message' => 'Gasto somado ao existente'
             ]);
-            exit;
         }
 
         $stmtFind->close();
@@ -450,7 +451,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtHist->execute();
         $stmtHist->close();
 
-        echo json_encode([
+        api_json([
             'success' => true,
             'id' => $gasto_id,
             'merged' => false,
@@ -469,8 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
 
         if (!$row || $row['usuario_id'] != $usuario_id) {
-            echo json_encode(['success' => false, 'message' => 'Sem permissão']);
-            exit;
+            api_json(['success' => false, 'message' => 'Sem permissão']);
         }
 
         // Deletar
@@ -487,7 +487,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $stmt->close();
 
-        echo json_encode(['success' => true, 'message' => 'Gasto deletado']);
+        api_json(['success' => true, 'message' => 'Gasto deletado']);
     }
     else if ($action === 'deletar_fixo') {
         $id = intval($data['id']);
@@ -501,8 +501,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
 
         if (!$row || $row['usuario_id'] != $usuario_id) {
-            echo json_encode(['success' => false, 'message' => 'Sem permissão ou fixo inexistente']);
-            exit;
+            api_json(['success' => false, 'message' => 'Sem permissão ou fixo inexistente']);
         }
 
         $sql = "DELETE FROM gastos_fixos WHERE id = ?";
@@ -511,7 +510,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtDel->execute();
         $stmtDel->close();
 
-        echo json_encode(['success' => true, 'message' => 'Gasto fixo removido']);
+        api_json(['success' => true, 'message' => 'Gasto fixo removido']);
     }
 }
 ?>
