@@ -6,7 +6,7 @@ verificar_login();
 $usuario_id = $_SESSION['usuario_id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Listar gastos com filtro
+    // Listar gastos com filtro.
     $filtro = $_GET['filtro'] ?? 'mes';
     $data_inicio = date('Y-m-d');
     $data_fim = date('Y-m-d');
@@ -117,3 +117,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
