@@ -3,7 +3,7 @@
 # Integrantes da equipe
 - Felipe Leal da Costa Martins Filho
 - Jhonas de Holanda Rodrigues
-- Maria linda Melo de Lucena
+- Marialinda Melo de Lucena
 - Vinicius José de Souza
 - Matheus Pereira Feitosa de Almeida
 
