@@ -347,53 +347,37 @@ $usuarios = $result->fetch_all(MYSQLI_ASSOC);
             <h1 class="page-title">Usuários Cadastrados</h1>
             <a href="criar-usuarios.php" class="btn-novo">➕ Novo Usuário</a>
             <script>
-                // Função de confirmação in-site (retorna Promise<boolean>)
-                function showConfirmAdmin(message, title = 'Confirmar') {
-                    return new Promise(resolve => {
-                        // criar elementos simples se não existirem
-                        let overlay = document.getElementById('adminConfirmOverlay');
-                        if (!overlay) {
-                            overlay = document.createElement('div');
-                            overlay.id = 'adminConfirmOverlay';
-                            overlay.style = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:3000;';
-                            overlay.innerHTML = `<div id="adminConfirmBox" style="background:white; padding:18px; border-radius:10px; max-width:480px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);"><div id="adminConfirmTitle" style="font-weight:700; margin-bottom:8px;">${title}</div><div id="adminConfirmMsg" style="margin-bottom:12px; color:#444;">${message}</div><div style="display:flex; gap:8px; justify-content:flex-end;"><button id="adminConfirmCancel" style="padding:8px 12px; border-radius:8px; border:none; background:#e0e0e0; cursor:pointer;">Cancelar</button><button id="adminConfirmOk" style="padding:8px 12px; border-radius:8px; border:none; background:linear-gradient(90deg,#667eea,#764ba2); color:white; cursor:pointer;">OK</button></div></div>`;
-                            document.body.appendChild(overlay);
-                        }
-                        const ok = document.getElementById('adminConfirmOk');
-                        const cancel = document.getElementById('adminConfirmCancel');
-                        const msg = document.getElementById('adminConfirmMsg');
-                        msg.textContent = message;
-                        overlay.style.display = 'flex';
-
-                        function cleanup(result) {
-                            overlay.style.display = 'none';
-                            ok.removeEventListener('click', onOk);
-                            cancel.removeEventListener('click', onCancel);
-                            resolve(result);
-                        }
-                        function onOk() { cleanup(true); }
-                        function onCancel() { cleanup(false); }
-                        ok.addEventListener('click', onOk);
-                        cancel.addEventListener('click', onCancel);
-                    });
+                // Delegar `showConfirmAdmin` para a implementação central em `assets/js/main.js`.
+                if (typeof window.showConfirmAdmin !== 'function') {
+                    window.showConfirmAdmin = function(message, title = 'Confirmar') {
+                        if (typeof window.showConfirm === 'function') return window.showConfirm(message, title);
+                        return new Promise(resolve => {
+                            const ok = confirm(title + "\n\n" + message);
+                            resolve(Boolean(ok));
+                        });
+                    };
                 }
 
-                // Toast simples in-site
-                function showToastAdmin(message, type = 'info', duration = 3500) {
-                    let toast = document.getElementById('adminToast');
-                    if (!toast) {
-                        toast = document.createElement('div');
-                        toast.id = 'adminToast';
-                        toast.style = 'position:fixed; top:20px; right:20px; z-index:3500; min-width:220px; display:none; padding:12px 16px; border-radius:8px; color:white;';
-                        document.body.appendChild(toast);
-                    }
-                    toast.textContent = message;
-                    toast.style.display = 'block';
-                    if (type === 'success') toast.style.background = 'linear-gradient(90deg,#2ecc71,#27ae60)';
-                    else if (type === 'error') toast.style.background = 'linear-gradient(90deg,#e74c3c,#c0392b)';
-                    else toast.style.background = 'rgba(0,0,0,0.8)';
-                    clearTimeout(window._adminToastTimer);
-                    window._adminToastTimer = setTimeout(() => toast.style.display = 'none', duration);
+                // Delegar toasts administrativos para o helper central `showToast`.
+                if (typeof window.showToastAdmin !== 'function') {
+                    window.showToastAdmin = function(message, type = 'info', duration = 3500) {
+                        if (typeof window.showToast === 'function') return window.showToast(message, type, duration);
+                        // fallback simples: criar um toast separado para admin
+                        let toast = document.getElementById('adminToast');
+                        if (!toast) {
+                            toast = document.createElement('div');
+                            toast.id = 'adminToast';
+                            toast.style = 'position:fixed; top:20px; right:20px; z-index:3500; min-width:220px; display:none; padding:12px 16px; border-radius:8px; color:white;';
+                            document.body.appendChild(toast);
+                        }
+                        toast.textContent = message;
+                        toast.style.display = 'block';
+                        if (type === 'success') toast.style.background = 'linear-gradient(90deg,#2ecc71,#27ae60)';
+                        else if (type === 'error') toast.style.background = 'linear-gradient(90deg,#e74c3c,#c0392b)';
+                        else toast.style.background = 'rgba(0,0,0,0.8)';
+                        clearTimeout(window._adminToastTimer);
+                        window._adminToastTimer = setTimeout(() => toast.style.display = 'none', duration);
+                    };
                 }
 
                 async function toggleAdmin(userId, makeAdmin) {
