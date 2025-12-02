@@ -35,3 +35,5 @@ $isAdmin = !empty($_SESSION['is_admin']);
 
 <!-- Small accessibility helper: ensure footer is focusable for keyboard users -->
 <a href="#top" style="position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;">Ir para o topo</a>
+<!-- Incluir scripts compartilhados -->
+<script src="assets/js/main.js"></script>
