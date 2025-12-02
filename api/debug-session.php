@@ -1,11 +1,9 @@
 <?php
 require_once __DIR__ . '/../config.php';
-header('Content-Type: application/json; charset=utf-8');
 
 // Apenas usuário logado pode ver (não expor em produção)
 if (!isset($_SESSION['usuario_id'])) {
-    echo json_encode(['logged_in' => false]);
-    exit;
+    api_json(['logged_in' => false]);
 }
 
 $response = [];
@@ -23,5 +21,5 @@ $stmt->close();
 
 $response['db_user'] = $row ?: null;
 
-echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-?>
+api_json($response);
+

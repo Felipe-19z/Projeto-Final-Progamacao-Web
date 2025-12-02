@@ -4,16 +4,14 @@ require_once '../config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Método não permitido']);
-    exit;
+    api_json(['success' => false, 'message' => 'Método não permitido']);
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
 
 // Validar dados
 if (!isset($data['nome']) || !isset($data['email']) || !isset($data['renda']) || !isset($data['senha'])) {
-    echo json_encode(['success' => false, 'message' => 'Todos os campos são obrigatórios']);
-    exit;
+    api_json(['success' => false, 'message' => 'Todos os campos são obrigatórios']);
 }
 
 $nome = sanitizar($data['nome']);
@@ -23,14 +21,12 @@ $senha = $data['senha'];
 
 // Validar email
 if (!validar_email($email)) {
-    echo json_encode(['success' => false, 'message' => 'Email inválido']);
-    exit;
+    api_json(['success' => false, 'message' => 'Email inválido']);
 }
 
 // Validar senha
 if (strlen($senha) < 6) {
-    echo json_encode(['success' => false, 'message' => 'A senha deve ter no mínimo 6 caracteres']);
-    exit;
+    api_json(['success' => false, 'message' => 'A senha deve ter no mínimo 6 caracteres']);
 }
 
 // Verificar se email já existe
@@ -41,9 +37,8 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
-    echo json_encode(['success' => false, 'message' => 'Este email já está registrado']);
     $stmt->close();
-    exit;
+    api_json(['success' => false, 'message' => 'Este email já está registrado']);
 }
 $stmt->close();
 
@@ -55,8 +50,7 @@ $sql = "INSERT INTO usuarios (nome, email, senha, renda_mensal) VALUES (?, ?, ?,
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
-    echo json_encode(['success' => false, 'message' => 'Erro ao conectar ao banco de dados']);
-    exit;
+    api_json(['success' => false, 'message' => 'Erro ao conectar ao banco de dados']);
 }
 
 $stmt->bind_param("sssd", $nome, $email, $senha_hash, $renda);
@@ -65,8 +59,7 @@ $usuario_id = $stmt->insert_id;
 $stmt->close();
 
 if ($usuario_id === 0) {
-    echo json_encode(['success' => false, 'message' => 'Erro ao criar conta']);
-    exit;
+    api_json(['success' => false, 'message' => 'Erro ao criar conta']);
 }
 
 // Criar configurações padrão para o usuário
@@ -92,7 +85,7 @@ if (function_exists('session_regenerate_id')) {
 // Registrar primeiro acesso
 registrar_log_acesso($usuario_id);
 
-echo json_encode([
+api_json([
     'success' => true,
     'message' => 'Conta criada com sucesso',
     'usuario' => [
@@ -101,4 +94,4 @@ echo json_encode([
         'email' => $email
     ]
 ]);
-?>
+

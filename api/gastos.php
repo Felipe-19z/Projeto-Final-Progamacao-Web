@@ -1,18 +1,48 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
+// Iniciar buffer de saída desde o começo para capturar quaisquer notices/warnings
+// e garantir que sempre possamos retornar JSON limpo ao cliente.
+ob_start();
 require_once '../config.php';
+/*
+ * API de Gastos
+ * - Suporta listagem de gastos (inclui ocorrências virtuais geradas a partir
+ *   de definições de gastos fixos stored em `gastos_fixos`).
+ * - Permite criar gastos pontuais e criar/gerenciar gastos fixos.
+ * - Sempre retorna JSON via helper `api_json()` definido em `config.php`.
+ * - Inclui hardening para capturar warnings/fatals e registrar em log.
+ */
+// Registrar shutdown handler para interceptar erros fatais e retornar JSON
+register_shutdown_function(function() {
+    $err = error_get_last();
+    if ($err) {
+        // limpar buffers e preparar resposta JSON
+        while (ob_get_level() > 0) ob_end_clean();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $payload = [
+            'success' => false,
+            'message' => 'Erro interno no servidor (ver detalhes).',
+            'php_error' => $err
+        ];
+
+        // tentar gravar em log para diagnóstico (workspace root)
+        try {
+            $logPath = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'gastos_api_error.log';
+            $entry = "[" . date('Y-m-d H:i:s') . "] " . json_encode($err, JSON_UNESCAPED_UNICODE) . PHP_EOL . PHP_EOL;
+            @file_put_contents($logPath, $entry, FILE_APPEND | LOCK_EX);
+        } catch (
+            Throwable $t
+        ) {
+            // se falhar ao logar, não fazemos nada extra
+        }
+
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+});
 verificar_login();
 
 $usuario_id = $_SESSION['usuario_id'];
-
-// Helper to return clean JSON and discard any accidental HTML/warnings emitted before
-function api_json($data) {
-    // clear all output buffers to avoid mixing HTML/warnings with JSON
-    while (ob_get_level() > 0) ob_end_clean();
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($data);
-    exit;
-}
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // If requested, return the raw fixed-expense definitions for management UI
     if (isset($_GET['listar_fixos'])) {
@@ -324,6 +354,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 }
 
+// -----------------------------
+// Manipulação de requisições POST
+// Suporta ações: criar (gasto pontual ou fixo), deletar, deletar_fixo
+// O payload esperado é JSON com ao menos a chave `action`.
+// -----------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     $action = $data['action'] ?? '';
@@ -360,7 +395,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
         $conn->query($sqlCreate);
 
-        // Ensure gastos_fixos table exists (for recurring expenses)
+        // Ensure gastos_fixos table 
+        // 
+        // exists (for recurring expenses)
         $sqlCreateFix = "CREATE TABLE IF NOT EXISTS gastos_fixos (
             id INT PRIMARY KEY AUTO_INCREMENT,
             usuario_id INT NOT NULL,
@@ -374,6 +411,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
         $conn->query($sqlCreateFix);
+
+        // Garantir compatibilidade: se a tabela já existia sem a coluna `periodos`, adicionar a coluna
+        try {
+            $colCheck = $conn->query("SHOW COLUMNS FROM gastos_fixos LIKE 'periodos'");
+            if ($colCheck && $colCheck->num_rows === 0) {
+                $conn->query("ALTER TABLE gastos_fixos ADD COLUMN periodos INT DEFAULT 0");
+            }
+        } catch (Exception $e) {
+            // falhar silenciosamente — o shutdown handler irá capturar erros fatais
+            error_log('gastos.php: falha ao garantir coluna periodos: ' . $e->getMessage());
+        }
 
         // If the request is to create a fixed expense, insert into gastos_fixos instead of gastos
         if ($is_fixo) {
@@ -513,4 +561,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         api_json(['success' => true, 'message' => 'Gasto fixo removido']);
     }
 }
-?>
+

@@ -14,7 +14,6 @@ if (ini_get('session.use_cookies')) {
 // Destruir sessão no servidor
 session_destroy();
 
-header('Content-Type: application/json');
-echo json_encode(['success' => true, 'message' => 'Logout realizado']);
+api_json(['success' => true, 'message' => 'Logout realizado']);
 exit;
-?>
+

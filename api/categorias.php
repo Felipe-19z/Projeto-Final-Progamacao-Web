@@ -47,13 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     $stmt->close();
 
-    echo json_encode([
+    api_json([
         'success' => true,
         'categorias' => $categorias,
         'filtro' => $filtro,
         'period' => [ 'inicio' => $data_inicio, 'fim' => $data_fim ]
     ]);
-    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -70,9 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("is", $usuario_id, $nome);
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
-            echo json_encode(['success' => false, 'message' => 'Esta categoria já existe']);
             $stmt->close();
-            exit;
+            api_json(['success' => false, 'message' => 'Esta categoria já existe']);
         }
         $stmt->close();
 
@@ -84,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $categoria_id = $stmt->insert_id;
         $stmt->close();
 
-        echo json_encode([
+        api_json([
             'success' => true,
             'id' => $categoria_id,
             'message' => 'Categoria criada com sucesso'
@@ -102,8 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
 
         if (!$row || $row['usuario_id'] != $usuario_id) {
-            echo json_encode(['success' => false, 'message' => 'Sem permissão']);
-            exit;
+            api_json(['success' => false, 'message' => 'Sem permissão']);
         }
 
         // Deletar gastos associados (opcional: pode arquivar em vez de deletar)
@@ -120,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $stmt->close();
 
-        echo json_encode(['success' => true, 'message' => 'Categoria deletada']);
+        api_json(['success' => true, 'message' => 'Categoria deletada']);
     }
 }
-?>
+

@@ -168,7 +168,7 @@ foreach ($categorias_map as $cid => $c) {
     if (floatval($c['total']) > 0) $categorias[] = $c;
 }
 
-echo json_encode([
+api_json([
     'success' => true,
     'renda' => round($renda, 2),
     'gastos_total' => round($gastos_total, 2),
@@ -176,4 +176,4 @@ echo json_encode([
     'categorias' => $categorias,
     'periodo' => $filtro
 ]);
-?>
+
