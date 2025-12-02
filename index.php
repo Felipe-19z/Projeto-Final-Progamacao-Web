@@ -497,7 +497,7 @@ if (!$configuracoes) {
         <div class="navbar-right">
             <a href="configuracoes.php" class="nav-link" id="navConfiguracoes">⚙️ Configurações</a>
             <?php if (isset($_SESSION['is_admin']) && $_SESSION['is_admin']): ?>
-                <a href="admin/index.php" class="nav-link" id="navAdmin" border-radius: 6px;">🛠️ Admin</a>
+                <a href="admin/index.php" class="nav-link" id="navAdmin">🛠️ Admin</a>
             <?php endif; ?>
             <a href="ajuda.php" class="nav-link" id="navAjuda">❓ Ajuda</a>
             <div class="nav-user">
@@ -788,31 +788,10 @@ if (!$configuracoes) {
                 }
             })();
 
-            // When fixed-expense checkbox toggled, hide/show date/time inputs
-            const gastoFixoEl = document.getElementById('gastoFixo');
-            const dataEl = document.getElementById('dataGasto');
-            const horaEl = document.getElementById('horaGasto');
-            const periodicEl = document.getElementById('periodicidadeFixo');
-            function toggleFixoUI() {
-                if (gastoFixoEl && gastoFixoEl.checked) {
-                    if (dataEl) dataEl.parentElement.style.opacity = 0.6;
-                    if (horaEl) horaEl.parentElement.style.opacity = 0.6;
-                    if (dataEl) dataEl.disabled = true;
-                    if (horaEl) horaEl.disabled = true;
-                    if (periodicEl) periodicEl.disabled = false;
-                } else {
-                    if (dataEl) dataEl.parentElement.style.opacity = 1;
-                    if (horaEl) horaEl.parentElement.style.opacity = 1;
-                    if (dataEl) dataEl.disabled = false;
-                    if (horaEl) horaEl.disabled = false;
-                    if (periodicEl) periodicEl.disabled = false;
-                }
-            }
-            if (gastoFixoEl) {
-                gastoFixoEl.addEventListener('change', toggleFixoUI);
-                // initialize state
-                toggleFixoUI();
-            }
+            // Legacy: a UI de checkbox `gastoFixo` foi removida do markup.
+            // O formulário inline para gastos fixos é usado atualmente
+            // (veja `adicionarGastoFixoInline()` e `toggleGastoFixo()` abaixo).
+            // Mantemos o código mínimo aqui por compatibilidade futura.
 
             // Adicionar event listeners aos botões do tutorial
             const btnProximo = document.querySelector('.tutorial-next');
@@ -838,6 +817,8 @@ if (!$configuracoes) {
         });
 
         // Carregar categorias
+        // Busca as categorias do servidor e preenche os selects/visuais.
+        // Também tenta obter dados de totais do gráfico para exibir valores consolidados.
         async function carregarCategorias() {
             try {
                 const response = await fetch(`api/categorias.php?filtro=${filtroAtual}`, { credentials: 'same-origin' });
@@ -947,6 +928,7 @@ if (!$configuracoes) {
         }
 
         // Adicionar categoria
+        // Envia nome da nova categoria ao servidor e recarrega a lista.
         async function adicionarCategoria() {
             // Accept name from either main add form or the Gastos Fixos card
             const elMain = document.getElementById('novaCategoria');
@@ -1016,62 +998,11 @@ if (!$configuracoes) {
             btn.style.cursor = btn.disabled ? 'not-allowed' : 'pointer';
         }
 
-        // Criar gasto fixo
-        async function adicionarGastoFixo() {
-            // permitir escolher categoria via select dentro do card, ou botão de seleção acima
-            const sel = document.getElementById('categoriaFixoSelect');
-            let catId = null;
-            if (sel && sel.value) catId = parseInt(sel.value);
-            if (!catId) catId = categoriaIdSelecionada;
-            if (!catId) {
-                showToast('Selecione uma categoria antes de criar o gasto fixo', 'error');
-                return;
-            }
-            const descricao = document.getElementById('descricaoFixo').value;
-            const valor = parseFloat(document.getElementById('valorFixo').value);
-            const startDate = document.getElementById('startDateFixo').value || null;
-            const periodicidade = document.getElementById('periodicidadeFixo').value;
-            const periodos = parseInt(document.getElementById('periodosFixo')?.value) || 0;
-            if (!valor || isNaN(valor) || valor <= 0) {
-                showToast('Informe um valor válido para o gasto fixo', 'error');
-                return;
-            }
-            try {
-                const response = await fetch('api/gastos.php', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                            action: 'criar',
-                            categoria_id: catId,
-                            descricao: descricao,
-                            valor: valor,
-                            data_gasto: startDate,
-                            fixo: true,
-                            periodicidade: periodicidade,
-                            periodos: periodos
-                        })
-                });
-                const res = await response.json();
-                if (res.success) {
-                    document.getElementById('descricaoFixo').value = '';
-                    document.getElementById('valorFixo').value = '';
-                    document.getElementById('startDateFixo').value = '';
-                    carregarGastos();
-                    carregarCategorias();
-                    atualizarGrafico();
-                    carregarGastosFixos();
-                    showToast('Gasto fixo criado com sucesso', 'success');
-                } else {
-                    showToast('Erro: ' + (res.message || 'Não foi possível criar gasto fixo'), 'error');
-                }
-            } catch (e) {
-                console.error('Erro ao criar gasto fixo:', e);
-                showToast('Erro ao conectar ao servidor', 'error');
-            }
-        }
+        // OBS: função antiga `adicionarGastoFixo()` removida — utilize
+        // `adicionarGastoFixoInline()` que é a implementação ativa no markup.
 
-        // Manipulador inline para o formulário de gasto fixo dentro do card "Adicionar Gasto"
+        // Criar gasto fixo (inline)
+        // Envia ao endpoint `api/gastos.php` com a flag `fixo=true`.
         async function adicionarGastoFixoInline() {
             const sel = document.getElementById('categoriaInlineSelect');
             let catId = null;
@@ -1155,6 +1086,7 @@ if (!$configuracoes) {
         }
 
         // Criar gasto normal
+        // Envia um gasto pontual (não fixo) ao servidor.
         async function adicionarGasto() {
             if (!categoriaIdSelecionada) {
                 showToast('Selecione uma categoria antes de registrar o gasto', 'error');
@@ -1203,6 +1135,7 @@ if (!$configuracoes) {
         }
 
         // Carregar gastos (opcional: passar categoria para filtrar)
+        // Recupera gastos (inclui ocorrências virtuais de fixos) e popula a lista.
         async function carregarGastos(categoria = null) {
             try {
                 // Se foi passada uma categoria, atualizar o filtro; se explicitamente null, limpar o filtro
@@ -1213,13 +1146,45 @@ if (!$configuracoes) {
                 // Allow optional category filter
                 const url = `api/gastos.php?filtro=${filtroAtual}${categoriaFilter ? '&categoria_id=' + categoriaFilter : ''}`;
                 console.debug('carregarGastos ->', url);
-                const response = await fetch(url, { credentials: 'same-origin' });
-                if (!response.ok) {
-                    console.error('carregarGastos: resposta não OK', response.status, response.statusText);
-                    showToast('Erro ao carregar gastos (status ' + response.status + ')', 'error');
-                    return null;
+
+                // Preferir `apiFetch` centralizado quando disponível (melhor tratamento de erros)
+                let data = null;
+                if (typeof window.apiFetch === 'function') {
+                    try {
+                        data = await window.apiFetch(url);
+                    } catch (e) {
+                        console.error('carregarGastos: apiFetch falhou', e);
+                        showToast('Erro ao carregar gastos: ' + (e.message || 'ver console'), 'error', 7000);
+                        return null;
+                    }
+                } else {
+                    const response = await fetch(url, { credentials: 'same-origin' });
+                    if (!response.ok) {
+                        console.error('carregarGastos: resposta não OK', response.status, response.statusText);
+                        const txt = await response.text().catch(() => '');
+                        console.error('carregarGastos: resposta (texto):', txt);
+                        showToast('Erro ao carregar gastos (status ' + response.status + ')', 'error');
+                        return null;
+                    }
+
+                    // Verificar content-type para evitar tentar parsear HTML como JSON
+                    const contentType = response.headers.get('content-type') || '';
+                    if (!contentType.includes('application/json')) {
+                        const txt = await response.text().catch(() => '');
+                        console.error('carregarGastos: resposta não JSON recebida:', txt.slice(0,200));
+                        showToast('Resposta inesperada do servidor (não-JSON). Veja console.', 'error', 7000);
+                        return null;
+                    }
+
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        const txt = await response.text().catch(() => '');
+                        console.error('carregarGastos: falha ao parsear JSON:', e, txt);
+                        showToast('Erro ao interpretar resposta do servidor. Veja console.', 'error', 7000);
+                        return null;
+                    }
                 }
-                const data = await response.json();
 
                 console.debug('carregarGastos resultado', data);
 
@@ -1236,7 +1201,10 @@ if (!$configuracoes) {
                     return data;
                 }
 
-                container.innerHTML = (Array.isArray(data.gastos) ? data.gastos : []).map(gasto => {
+                // defensive: proteger todo o bloco de renderização para evitar exceptions inesperadas
+                try {
+                    const gastosArr = (data && Array.isArray(data.gastos)) ? data.gastos : [];
+                    container.innerHTML = gastosArr.map(gasto => {
                                 const isF = gasto.fixo ? true : false;
                                 const catColor = gasto.cor_categoria || '#999';
                                 const catName = gasto.categoria || '';
@@ -1251,11 +1219,12 @@ if (!$configuracoes) {
                                     actionButtons = `<button class="btn-small" style="background:#ff6b6b; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer;" onclick="deletarGasto(${gasto.id})">Deletar</button>`;
                                 }
 
-                                const historyBtn = (gasto.historico && gasto.historico.length) ? `<button class="btn-small" style="background:#667eea; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; margin-left:6px;" onclick="toggleHistory(${gasto.id})">Histórico (${gasto.historico.length})</button>` : '';
+                                const historyArr = Array.isArray(gasto.historico) ? gasto.historico : [];
+                                const historyBtn = (historyArr.length) ? `<button class="btn-small" style="background:#667eea; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; margin-left:6px;" onclick="toggleHistory('${gasto.id}')">Histórico (${historyArr.length})</button>` : '';
 
-                                const historyHtml = (gasto.historico && gasto.historico.length) ? `
+                                const historyHtml = (historyArr.length) ? `
                                     <div id="gasto-history-${gasto.id}" class="gasto-history" style="display:none; padding:8px 18px; border-left:4px solid #f0f0f0; background:#fafafa; margin:6px 0 12px 0; border-radius:6px;">
-                                        ${gasto.historico.map(h => `<div style="display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed #eee;"><div style="color:#444; font-size:13px;">${h.descricao || '<i>sem descrição</i>'}</div><div style="color:#999; font-size:13px;">R$ ${parseFloat(h.valor).toFixed(2).replace('.', ',')} • ${new Date(h.data_registro).toLocaleString()}</div></div>`).join('')}
+                                        ${historyArr.map(h => `<div style="display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px dashed #eee;"><div style="color:#444; font-size:13px;">${h.descricao || '<i>sem descrição</i>'}</div><div style="color:#999; font-size:13px;">R$ ${parseFloat(h.valor).toFixed(2).replace('.', ',')} • ${new Date(h.data_registro).toLocaleString()}</div></div>`).join('')}
                                     </div>` : '';
 
                                 return `
@@ -1273,6 +1242,12 @@ if (!$configuracoes) {
                                 ${historyHtml}
                                 `;
                             }).join('');
+                } catch (renderErr) {
+                    console.error('Erro ao renderizar lista de gastos:', renderErr, data);
+                    if (container) container.innerHTML = '<div class="empty-state"><p>Erro ao processar dados de gastos</p></div>';
+                    showToast('Erro ao processar dados de gastos (veja console)', 'error', 6000);
+                    return data;
+                }
                             // Show annual projection if provided
                             if (data.projecao_anual !== undefined && document.getElementById('projecaoAnual')) {
                                 document.getElementById('projecaoAnual').textContent = 'Projeção anual (fixos): R$ ' + parseFloat(data.projecao_anual).toFixed(2).replace('.', ',');
@@ -1303,6 +1278,7 @@ if (!$configuracoes) {
         }
 
         // Atualizar gráfico
+        // Solicita dados de resumo ao endpoint `api/grafico.php` e redraw do chart.
         async function atualizarGrafico() {
             try {
                 const response = await fetch(`api/grafico.php?filtro=${filtroAtual}`, { credentials: 'same-origin' });
@@ -1441,6 +1417,7 @@ if (!$configuracoes) {
         }
 
         // Carregar lista de gastos fixos (definições) para gerenciamento
+        // Usado para a interface de gerenciamento de fixos (listar/remover).
         async function carregarGastosFixos() {
             try {
                 const resp = await fetch(`api/gastos.php?listar_fixos=1`, { credentials: 'same-origin' });
@@ -1486,64 +1463,42 @@ if (!$configuracoes) {
         <div id="siteToastMsg" style="font-size:14px;"></div>
     </div>
     <script>
-        function showToast(message, type = 'info', duration = 4000) {
-            const toast = document.getElementById('siteToast');
-            const msg = document.getElementById('siteToastMsg');
-            if (!toast || !msg) {
-                console.log('Toast:', message);
-                return;
-            }
-            msg.textContent = message;
-            toast.style.display = 'block';
-            if (type === 'success') toast.style.background = 'linear-gradient(90deg,#2ecc71,#27ae60)';
-            else if (type === 'error') toast.style.background = 'linear-gradient(90deg,#e74c3c,#c0392b)';
-            else toast.style.background = 'rgba(0,0,0,0.8)';
-            clearTimeout(window._siteToastTimer);
-            window._siteToastTimer = setTimeout(() => {
-                toast.style.display = 'none';
-            }, duration);
+        // Compatibilidade: delegar `showToast` para `assets/js/main.js` se disponível.
+        // Caso contrário, definimos um fallback simples que reutiliza o markup `#siteToast`.
+        if (typeof window.showToast !== 'function') {
+            window.showToast = function(message, type = 'info', duration = 4000) {
+                const toast = document.getElementById('siteToast');
+                const msg = document.getElementById('siteToastMsg');
+                if (!toast || !msg) {
+                    console.log('Toast (fallback):', message);
+                    return;
+                }
+                msg.textContent = message;
+                toast.style.display = 'block';
+                if (type === 'success') toast.style.background = 'linear-gradient(90deg,#2ecc71,#27ae60)';
+                else if (type === 'error') toast.style.background = 'linear-gradient(90deg,#e74c3c,#c0392b)';
+                else toast.style.background = 'rgba(0,0,0,0.8)';
+                clearTimeout(window._siteToastTimer);
+                window._siteToastTimer = setTimeout(() => {
+                    toast.style.display = 'none';
+                }, duration);
+            };
         }
     </script>
-    <!-- Confirm Modal (site) -->
-    <div id="confirmOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
-        <div id="confirmBox" style="background:white; border-radius:10px; padding:20px; max-width:480px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-            <div style="font-weight:700; font-size:18px; margin-bottom:8px;" id="confirmTitle">Confirmar ação</div>
-            <div id="confirmMessage" style="color:#444; margin-bottom:18px;">Tem certeza?</div>
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button id="confirmCancel" style="padding:8px 14px; border-radius:8px; border:none; background:#e0e0e0; cursor:pointer;">Cancelar</button>
-                <button id="confirmOk" style="padding:8px 14px; border-radius:8px; border:none; background:linear-gradient(90deg,#667eea,#764ba2); color:white; cursor:pointer;">OK</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- Confirm modal e showConfirm centralizados em `assets/js/main.js`. -->
     <script>
-        function showConfirm(message, title = 'Confirmar ação') {
-            return new Promise(resolve => {
-                const overlay = document.getElementById('confirmOverlay');
-                const msg = document.getElementById('confirmMessage');
-                const ttl = document.getElementById('confirmTitle');
-                const ok = document.getElementById('confirmOk');
-                const cancel = document.getElementById('confirmCancel');
-
-                msg.textContent = message;
-                ttl.textContent = title;
-                overlay.style.display = 'flex';
-
-                function cleanup(result) {
-                    overlay.style.display = 'none';
-                    ok.removeEventListener('click', onOk);
-                    cancel.removeEventListener('click', onCancel);
-                    resolve(result);
-                }
-
-                function onOk() { cleanup(true); }
-                function onCancel() { cleanup(false); }
-
-                ok.addEventListener('click', onOk);
-                cancel.addEventListener('click', onCancel);
-            });
+        // Stub de compatibilidade: se `assets/js/main.js` ainda não carregou, garantimos
+        // que `showConfirm` exista (usa `confirm()` como fallback simples).
+        if (typeof window.showConfirm !== 'function') {
+            window.showConfirm = function(message, title = 'Confirmar ação') {
+                return new Promise(resolve => {
+                    const ok = confirm(title + "\n\n" + message);
+                    resolve(Boolean(ok));
+                });
+            };
         }
-
+    </script>
+    <script>
         // Override functions to use modal
         async function logout() {
             const ok = await showConfirm('Tem certeza que deseja sair?', 'Sair');

@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS auditoria_exclusao (
     FOREIGN KEY (excluido_por) REFERENCES usuarios(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
+-- Tabela para armazenar os históricos de gastos
 CREATE TABLE IF NOT EXISTS gasto_historico (
   id INT AUTO_INCREMENT PRIMARY KEY,
   gasto_id INT NOT NULL,

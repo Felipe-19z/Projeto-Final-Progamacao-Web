@@ -30,8 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nome'])) {
         }
         
         // Validar dados
-        $nome = trim($_POST['nome']);
-        $email = trim($_POST['email']);
+        // Usar fallback para evitar warnings caso a chave não exista
+        $nome = trim($_POST['nome'] ?? '');
+        $email = trim($_POST['email'] ?? '');
         $renda = floatval($_POST['renda']);
         $senha = $_POST['senha'];
         $senha_confirm = $_POST['senha_confirm'];

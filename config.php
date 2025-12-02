@@ -43,6 +43,18 @@ session_start();
 // FUNÇÕES AUXILIARES
 // =====================================================
 
+// Função utilitária para retornar JSON limpo ao cliente.
+// Remove qualquer conteúdo de buffers de saída que possa ter sido gerado
+// (avisos, warnings, HTML) e envia um JSON válido com charset.
+function api_json($data) {
+    // limpar todos os buffers de saída
+    while (ob_get_level() > 0) ob_end_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+
 /**
  * Registra log de acesso do usuário
  */
@@ -62,6 +74,17 @@ function registrar_log_acesso($usuario_id) {
  */
 function verificar_login() {
     if (!isset($_SESSION['usuario_id'])) {
+        // Detectar requisições de API/ajax para retornar JSON em vez de redirecionar.
+        $isApiRequest = false;
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (stripos($uri, '/api/') !== false) $isApiRequest = true;
+        if (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) $isApiRequest = true;
+        if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') $isApiRequest = true;
+
+        if ($isApiRequest) {
+            api_json(['success' => false, 'message' => 'Usuário não autenticado', 'code' => 'unauthenticated']);
+        }
+
         header("Location: " . SITE_URL . "login.php");
         exit();
     }
@@ -74,6 +97,12 @@ function verificar_admin() {
     verificar_login();
     // Verifica flag is_admin na sessão (fallback para id==1)
     if (!isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
+        // Se for chamada via API, retornar JSON de erro em vez de redirecionar
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        $isApiRequest = (stripos($uri, '/api/') !== false) || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+        if ($isApiRequest) {
+            api_json(['success' => false, 'message' => 'Ação restrita a administradores', 'code' => 'forbidden']);
+        }
         header("Location: " . SITE_URL . "index.php");
         exit();
     }
@@ -83,6 +112,9 @@ function verificar_admin() {
  * Sanitiza entrada do usuário
  */
 function sanitizar($input) {
+    // Garantir que sempre trabalhamos com string (evita warnings ao chamar trim(null))
+    if (is_null($input)) $input = '';
+    if (!is_string($input)) $input = (string)$input;
     return htmlspecialchars(trim($input), ENT_QUOTES, 'UTF-8');
 }
 
@@ -161,4 +193,3 @@ function formatar_hora($hora) {
 // =====================================================
 // FIM DO ARQUIVO
 // =====================================================
-?>

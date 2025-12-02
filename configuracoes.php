@@ -618,45 +618,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     </script>
 
-    <!-- Confirm Modal (site) -->
-    <div id="confirmOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
-        <div id="confirmBox" style="background:white; border-radius:10px; padding:20px; max-width:480px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-            <div style="font-weight:700; font-size:18px; margin-bottom:8px;" id="confirmTitle">Confirmar ação</div>
-            <div id="confirmMessage" style="color:#444; margin-bottom:18px;">Tem certeza?</div>
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button id="confirmCancel" style="padding:8px 14px; border-radius:8px; border:none; background:#e0e0e0; cursor:pointer;">Cancelar</button>
-                <button id="confirmOk" style="padding:8px 14px; border-radius:8px; border:none; background:linear-gradient(90deg,#667eea,#764ba2); color:white; cursor:pointer;">OK</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function showConfirm(message, title = 'Confirmar ação') {
-            return new Promise(resolve => {
-                const overlay = document.getElementById('confirmOverlay');
-                const msg = document.getElementById('confirmMessage');
-                const ttl = document.getElementById('confirmTitle');
-                const ok = document.getElementById('confirmOk');
-                const cancel = document.getElementById('confirmCancel');
-
-                msg.textContent = message;
-                ttl.textContent = title;
-                overlay.style.display = 'flex';
-
-                function cleanup(result) {
-                    overlay.style.display = 'none';
-                    ok.removeEventListener('click', onOk);
-                    cancel.removeEventListener('click', onCancel);
-                    resolve(result);
-                }
-
-                function onOk() { cleanup(true); }
-                function onCancel() { cleanup(false); }
-
-                ok.addEventListener('click', onOk);
-                cancel.addEventListener('click', onCancel);
-            });
-        }
-    </script>
+    <!-- Confirm modal and `showConfirm()` agora fornecidos por `assets/js/main.js` (incluído no footer) -->
 </body>
 </html>
