@@ -1,0 +1,11 @@
+{
+    "timestamp": "2025-12-03T16:47:37-03:00",
+    "usuario_id": 2,
+    "filtro": "mes",
+    "period": {
+        "inicio": "2025-12-01",
+        "fim": "2025-12-31"
+    },
+    "categorias": [],
+    "totaisPorCategoria": []
+}
